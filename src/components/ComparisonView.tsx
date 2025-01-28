@@ -17,6 +17,7 @@ export default function ComparisonView({ originalImage, originalPreview }: Compa
   const [sliderPosition, setSliderPosition] = useState(50);
   const [compressedSize, setCompressedSize] = useState<number>(0);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [compressedBlob, setCompressedBlob] = useState<Blob | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -32,12 +33,14 @@ export default function ComparisonView({ originalImage, originalPreview }: Compa
         if (isMounted) {
           setCompressedPreview(dataUrl);
           setCompressedSize(compressedBlob.size);
+          setCompressedBlob(compressedBlob);
         }
       } catch (error) {
         console.error('Compression failed:', error);
         if (isMounted) {
           setCompressedPreview(null);
           setCompressedSize(0);
+          setCompressedBlob(null);
         }
       } finally {
         if (isMounted) {
@@ -62,25 +65,51 @@ export default function ComparisonView({ originalImage, originalPreview }: Compa
     setSliderPosition(percentage);
   };
 
-  const handleDownload = useCallback(() => {
-    if (!compressedPreview) return;
-    
-    // Create a temporary link element
-    const link = document.createElement('a');
-    link.href = compressedPreview;
-    
-    // Get original filename and add suffix
+  const handleDownload = useCallback(async () => {
+    if (!compressedBlob) return;
+
+    // Create quality suffix for filename
+    const quality = Math.round(compressionRatio * 100);
     const originalName = originalImage.name;
     const extension = originalName.split('.').pop();
     const baseName = originalName.replace(`.${extension}`, '');
-    const quality = Math.round(compressionRatio * 100);
     const newFileName = `${baseName}-compressed-${quality}pct.jpg`;
-    
-    link.download = newFileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }, [compressedPreview, originalImage.name, compressionRatio]);
+
+    try {
+      // Check if File System Access API is supported
+      if ('showSaveFilePicker' in window) {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: newFileName,
+          types: [{
+            description: 'JPEG Image',
+            accept: {
+              'image/jpeg': ['.jpg', '.jpeg'],
+            },
+          }],
+        });
+
+        const writableStream = await handle.createWritable();
+        await writableStream.write(compressedBlob);
+        await writableStream.close();
+      } else {
+        // Fallback for browsers without File System Access API
+        const blobUrl = URL.createObjectURL(compressedBlob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = newFileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        // Clean up the blob URL
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name !== 'AbortError') {
+        console.error('Failed to save file:', err);
+        alert('Failed to save the compressed image. Please try again.');
+      }
+    }
+  }, [compressedBlob, originalImage.name, compressionRatio]);
 
   return (
     <div className="w-full space-y-6">
