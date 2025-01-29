@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import CompressionSlider from './CompressionSlider';
 import ImageStats from './ImageStats';
 import { compressImage } from '@/utils/imageCompression';
@@ -117,11 +118,15 @@ export default function ComparisonView({ originalImage, originalPreview }: Compa
         {/* Original Image */}
         <div className="absolute inset-0">
           {originalPreview && (
-            <img
-              src={originalPreview}
-              alt="Original"
-              className="w-full h-full object-contain"
-            />
+            <div className="relative w-full h-full">
+              <Image
+                src={originalPreview}
+                alt="Original"
+                fill
+                className="object-contain"
+                unoptimized // Important for data URLs
+              />
+            </div>
           )}
         </div>
 
@@ -131,11 +136,15 @@ export default function ComparisonView({ originalImage, originalPreview }: Compa
             className="absolute inset-0"
             style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
           >
-            <img
-              src={compressedPreview}
-              alt="Compressed"
-              className="w-full h-full object-contain"
-            />
+            <div className="relative w-full h-full">
+              <Image
+                src={compressedPreview}
+                alt="Compressed"
+                fill
+                className="object-contain"
+                unoptimized // Important for data URLs
+              />
+            </div>
           </div>
         )}
 
