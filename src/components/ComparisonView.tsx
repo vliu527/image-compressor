@@ -6,6 +6,31 @@ import CompressionSlider from './CompressionSlider';
 import ImageStats from './ImageStats';
 import { compressImage } from '@/utils/imageCompression';
 
+// Add type definition for the File System Access API
+interface FileSystemFileHandle {
+  createWritable: () => Promise<FileSystemWritableFileStream>;
+}
+
+interface FileSystemWritableFileStream {
+  write: (data: Blob) => Promise<void>;
+  close: () => Promise<void>;
+}
+
+interface ShowSaveFilePickerOptions {
+  suggestedName?: string;
+  types?: Array<{
+    description: string;
+    accept: Record<string, string[]>;
+  }>;
+}
+
+// Add type guard for window.showSaveFilePicker
+function hasShowSaveFilePicker(window: Window): window is Window & {
+  showSaveFilePicker: (options: ShowSaveFilePickerOptions) => Promise<FileSystemFileHandle>;
+} {
+  return 'showSaveFilePicker' in window;
+}
+
 interface ComparisonViewProps {
   originalImage: File;
   originalPreview: string;
@@ -77,8 +102,8 @@ export default function ComparisonView({ originalImage, originalPreview }: Compa
     const newFileName = `${baseName}-compressed-${quality}pct.jpg`;
 
     try {
-      // Check if File System Access API is supported
-      if ('showSaveFilePicker' in window) {
+      // Use type guard to check for File System Access API
+      if (typeof window !== 'undefined' && hasShowSaveFilePicker(window)) {
         const handle = await window.showSaveFilePicker({
           suggestedName: newFileName,
           types: [{
