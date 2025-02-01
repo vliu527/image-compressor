@@ -1,7 +1,7 @@
 'use client';
 
 import ImageUploader from "@/components/ImageUploader";
-import SignIn from "@/components/auth/SignIn";
+import AuthView from "@/components/auth/AuthView";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { auth } from "@/lib/firebase";
 
@@ -17,7 +17,7 @@ export default function Home() {
   }
 
   if (!user) {
-    return <SignIn />;
+    return <AuthView />;
   }
 
   return (

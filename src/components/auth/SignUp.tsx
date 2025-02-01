@@ -2,38 +2,35 @@
 
 import { useState } from 'react';
 import { auth } from '@/lib/firebase';
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 
-interface SignInProps {
+interface SignUpProps {
   onToggleView: () => void;
 }
 
-export default function SignIn({ onToggleView }: SignInProps) {
+export default function SignUp({ onToggleView }: SignUpProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [error, setError] = useState('');
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (error) {
-      setError('Failed to sign in');
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      setError('Failed to sign in with Google');
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      if (name && userCredential.user) {
+        await updateProfile(userCredential.user, {
+          displayName: name
+        });
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to sign up');
     }
   };
 
   return (
     <div className="max-w-md mx-auto mt-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-center">Sign In</h2>
+      <h2 className="text-2xl font-bold mb-6 text-center">Create Account</h2>
       
       {error && (
         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
@@ -41,7 +38,18 @@ export default function SignIn({ onToggleView }: SignInProps) {
         </div>
       )}
 
-      <form onSubmit={handleEmailSignIn} className="space-y-4">
+      <form onSubmit={handleSignUp} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+
         <div>
           <label className="block text-sm font-medium mb-1">Email</label>
           <input
@@ -61,6 +69,7 @@ export default function SignIn({ onToggleView }: SignInProps) {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
             required
+            minLength={6}
           />
         </div>
 
@@ -68,32 +77,18 @@ export default function SignIn({ onToggleView }: SignInProps) {
           type="submit"
           className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
         >
-          Sign In
+          Sign Up
         </button>
       </form>
 
-      <div className="mt-4">
-        <button
-          onClick={handleGoogleSignIn}
-          className="w-full bg-white text-gray-700 border border-gray-300 py-2 rounded hover:bg-gray-50 flex items-center justify-center"
-        >
-          <img
-            src="https://www.google.com/favicon.ico"
-            alt="Google"
-            className="w-4 h-4 mr-2"
-          />
-          Sign in with Google
-        </button>
-      </div>
-
       <div className="mt-4 text-center">
         <p className="text-sm">
-          Don't have an account?{' '}
+          Already have an account?{' '}
           <button
             onClick={onToggleView}
             className="text-blue-500 hover:text-blue-600"
           >
-            Sign Up
+            Sign In
           </button>
         </p>
       </div>
